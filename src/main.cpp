@@ -1,25 +1,21 @@
-#include <Arduino.h>
-
-constexpr int BUTTON_PIN = 4;
-constexpr int LED_PIN = 2;
+#include "gain.h"
+#include "led.h"
 
 void setup() {
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(LED_PIN, OUTPUT);
   Serial.begin(9600);
+  gain_init();
+  led_init();
 }
 
-bool lastButtonState = HIGH;
-bool bypass = true;
-
 void loop() {
-  bool currentButtonState = digitalRead(BUTTON_PIN);
+  int raw = gain_read_raw();
+  Serial.println(raw);
+  float gain = gain_read_smooth();
 
-  if (lastButtonState == HIGH && currentButtonState == LOW) {
-    bypass = !bypass;
-    Serial.println(bypass ? "BYPASS" : "EFFECT ON");
-    digitalWrite(LED_PIN, !bypass);
-  }
+  // Map 0–4095 → 0–255
+  int brightness = map(gain, 0, 4095, 0, 255);
 
-  lastButtonState = currentButtonState;
+  led_set_brightness(brightness);
+
+  delay(50);
 }
