@@ -1,51 +1,37 @@
 #include <Arduino.h>
-#include "led.h"
-#include "gain.h"
 #include "footswitch.h"
+#include "led.h"
 
-static bool bypass = true;
-static bool led_mode = true;
-static bool blink_state;
-static unsigned long last_blink_time;
 
+static LedMode led_mode = LedMode::Off;
+static LedMode last_mode = LedMode::On;
 
 void setup() {
-  led_init();
-  gain_init();
-  footswitch_init();
+    footswitch_init(27);   // example pin
+    led_init(25, 34, 0);           // onboard LED
 }
-
-
-void update_blink() {
-  if (millis() - last_blink_time >= 100) {
-    last_blink_time = millis();
-    blink_state = !blink_state;
-  }
-}
-
 
 void loop() {
-  footswitch_update();
-  update_blink();
+    FootswitchEvent ev = footswitch_update();
+    led_mode = led_get_mode();
 
-  if (footswitch_pressed()) {
-    bypass = !bypass;
-  }
+    if (ev == FootswitchEvent::ShortPress) {
+        if (led_mode == LedMode::Off) {
+            led_set_mode(last_mode);
+        } else {
+            last_mode = led_mode;
+            led_set_mode(LedMode::Off);
+        }
+    }
 
-  if (footswitch_long_pressed() && !bypass) {
-    led_mode = !led_mode;
-  }
+    if (ev == FootswitchEvent::LongPress) {
+      if (led_mode == LedMode::Blink){
+        led_set_mode(LedMode::On);
+        } else if (led_mode == LedMode::On) {
+        led_set_mode(LedMode::Blink);
+        }
+    }
 
-  float gain = gain_read_smooth();
-
-  if (bypass) {
-    led_set_brightness(0);
-  }
-  else if (led_mode) {
-    led_set_brightness(blink_state ? 0:255);
-  } 
-  else {
-    int brightness = map(gain, 0, 4095, 0, 255);
-    led_set_brightness(brightness);
-  }
+    
+    led_update();
 }

@@ -1,8 +1,11 @@
 #pragma once
 #include <Arduino.h>
 
-void footswitch_init();
-void footswitch_update();
+enum class FootswitchEvent {
+    None,
+    ShortPress,
+    LongPress
+};
 
-bool footswitch_pressed();      // short press event
-bool footswitch_long_pressed(); // long press event
+void footswitch_init(uint8_t pin);
+FootswitchEvent footswitch_update();
